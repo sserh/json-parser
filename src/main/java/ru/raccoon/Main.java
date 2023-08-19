@@ -6,15 +6,16 @@ import com.opencsv.bean.ColumnPositionMappingStrategy;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.*;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.w3c.dom.*;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -23,6 +24,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 public class Main {
     public static void main(String[] args) throws Exception {
 
+        //task01
         String[] columnMapping = {"id", "firstName", "lastName", "country", "age"};
 
         String fileName = "data.csv";
@@ -33,9 +35,22 @@ public class Main {
 
         writeString(json, "data.json");
 
-        String json2 = listToJson(parseXML());
+        //task02
+        String xmlFileName = "data.xml";
+
+        String json2 = listToJson(parseXML(xmlFileName));
 
         writeString(json2, "data2.json");
+
+        //task03
+        String json3 = readString("data.json");
+
+       list = jsonToList(json3);
+
+        for (Employee employee :
+                list) {
+            System.out.println(employee);
+        }
 
     }
 
@@ -61,11 +76,11 @@ public class Main {
         return null;
     }
 
-    private static List<Employee> parseXML() throws Exception {
+    private static List<Employee> parseXML(String fileName) throws Exception {
 
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new File("data.xml"));
+        Document doc = builder.parse(new File(fileName));
 
         Node root = doc.getDocumentElement();
         return readEmployees(root);
@@ -109,6 +124,23 @@ public class Main {
         return gson.toJson(list, listType);
     }
 
+    private static List<Employee> jsonToList(String jsonString) throws ParseException, IOException {
+
+        List<Employee> employees = new ArrayList<>();
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
+
+        JSONParser jsonParser = new JSONParser();
+        JSONObject jsonObject = (JSONObject) jsonParser.parse(jsonString);
+        JSONArray jsonArray = (JSONArray) jsonObject.get("employees");
+
+        for (Object o : jsonArray) {
+            employees.add(gson.fromJson(o.toString(), Employee.class));
+        }
+
+        return employees;
+    }
+
     //запись строки в файл
     private static void writeString(String str, String fileName) {
 
@@ -118,5 +150,24 @@ public class Main {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    private static String readString(String fileName){
+
+        StringBuilder result = new StringBuilder();
+
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(fileName));) {
+            String s;
+            while ((s = bufferedReader.readLine()) != null) {
+                result.append(s);
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        result.insert(0, "{\"employees\":");
+        result.append("}");
+
+        return result.toString();
     }
 }
